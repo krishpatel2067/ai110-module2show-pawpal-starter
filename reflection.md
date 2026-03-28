@@ -6,22 +6,14 @@
 
 - Briefly describe your initial UML design.
 
-The initial UML design consists of abstract classes, concrete classes, and enums. The abstract classes ensure that the concrete classes that inherit them all implement the methods dictated by the abstract class. The concrete classes help create the main architecture of the app. In particular, data classes hold just data and are useful for logically collecting multiple datatypes into in-context objects. The enums ensure that only a select few values can be used. 
 
 - What classes did you include, and what responsibilities did you assign to each?
+
+The initial UML design consists of four classes:
     - `Pet` - Data class. Hold pet attributes such as name, species, age, and notes.
     - `Owner`. Data class. Holds name, budget time, pets, and schedules. Can add and remove tasks.
     - `Scheduler` - Concrete class. Generates plans and manages high-level scheduling.
-    - `SchedulerContext` - Data class. Contains remaining minutes, recently done tasks, and elapsed minutes.
-    - `Schedule` - Concrete class. Holds schedule attributes like date and tasks. Creates a summary and reasoning report.
     - `Task` - Data class. Contains key task atributes such as name, priority (for sorting), and is mandatory. 
-    - `ScheduledTask` - Data class. Wraps `Task` to specifically represent those in a schedule.
-    - `Constraint` - Abstract class. Serves as a template for `TimeBudgetConstraint`, `CooldownConstraint`, and `MandatoryOverrideConstraint`. Returns if it is satisfied.
-        - `TimeBudgetConstraint`: Prevents task duration exceeding remaining minutes.
-        - `CooldownConstraint`: Prevents duplicate tasks within a specified duration.
-        - `MandatoryOverrideConstraint`: Always allows such tasks.
-    - `Priority`: Enum. Represents task priority: `LOW`, `MEDIUM`, `HIGH`
-    - `TaskCategory`: Enum. Represents task category: `WALK`, `FEEDING`, `MEDICATION`, `ENRICHMENT`, `GROOMING`, `OTHER`
 
 **b. Design changes**
 

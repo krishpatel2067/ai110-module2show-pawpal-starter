@@ -1,171 +1,68 @@
-from __future__ import annotations
-
-import heapq
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import date, time
-from enum import Enum
-from typing import Optional
-
-
-# ---------------------------------------------------------------------------
-# Enumerations
-# ---------------------------------------------------------------------------
-
-
-class Priority(Enum):
-    HIGH = 1
-    MEDIUM = 2
-    LOW = 3
-
-
-class TaskCategory(Enum):
-    WALK = "walk"
-    FEEDING = "feeding"
-    MEDICATION = "medication"
-    ENRICHMENT = "enrichment"
-    GROOMING = "grooming"
-    OTHER = "other"
-
-
-# ---------------------------------------------------------------------------
-# Core data models
-# ---------------------------------------------------------------------------
+from datetime import date
 
 
 @dataclass
 class Task:
+    """A single pet care task (walk, feeding, medication, etc.)."""
+
     name: str
-    duration_minutes: int
-    priority: Priority
-    category: TaskCategory
-    is_mandatory: bool = False
-    cooldown_hours: float = 0.0
-
-    def __lt__(self, other: Task) -> bool: ...
-
-    def __repr__(self) -> str: ...
+    description: str
+    completed: bool
+    frequency: str       # e.g. "daily", "weekly", "as needed"
+    date: date
+    pet_name: str        # name of the associated pet, "All", or "None"
 
 
 @dataclass
 class Pet:
+    """A pet owned by the owner."""
+
     name: str
     species: str
     age_years: float
     notes: str = ""
 
-    def __repr__(self) -> str: ...
-
 
 @dataclass
 class Owner:
+    """The pet owner. Holds a list of pets and can filter tasks by pet."""
+
     name: str
-    time_budget_minutes: int
     pets: list[Pet] = field(default_factory=list)
-    tasks: list[Task] = field(default_factory=list)
-    schedules: list[Schedule] = field(default_factory=list)
 
-    def add_task(self, task: Task, schedule: Schedule | None = None) -> None: ...
+    def add_pet(self, pet: Pet) -> None:
+        """Add a pet to the owner's list."""
+        ...
 
-    def remove_task(self, name: str, schedule: Schedule | None = None) -> None: ...
+    def remove_pet(self, name: str) -> None:
+        """Remove a pet by name from the owner's list."""
+        ...
 
-    def __repr__(self) -> str: ...
-
-
-# ---------------------------------------------------------------------------
-# Schedule output models
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class ScheduledTask:
-    task: Task
-    start_time: time
-    end_time: time
-    reasoning: str
-
-
-@dataclass
-class Schedule:
-    schedule_date: date
-    scheduled: list[ScheduledTask] = field(default_factory=list)
-    skipped: list[tuple] = field(default_factory=list)
-    total_minutes_used: int = 0
-
-    def summary(self) -> str: ...
-
-    def reasoning_report(self) -> str: ...
-
-
-# ---------------------------------------------------------------------------
-# Constraint system
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class SchedulerContext:
-    remaining_minutes: int
-    recently_done: list[str]
-    elapsed_minutes: int
-
-
-class Constraint(ABC):
-    name: str
-
-    @abstractmethod
-    def is_satisfied(self, task: Task, context: SchedulerContext) -> bool: ...
-
-    @abstractmethod
-    def describe(self) -> str: ...
-
-
-class TimeBudgetConstraint(Constraint):
-    def __init__(self) -> None:
-        self.name = "TimeBudget"
-
-    def is_satisfied(self, task: Task, context: SchedulerContext) -> bool: ...
-
-    def describe(self) -> str: ...
-
-
-class CooldownConstraint(Constraint):
-    def __init__(self, recently_done: list[str] | None = None) -> None:
-        self.name = "Cooldown"
-        self.recently_done: list[str] = recently_done if recently_done is not None else []
-
-    def is_satisfied(self, task: Task, context: SchedulerContext) -> bool: ...
-
-    def describe(self) -> str: ...
-
-
-class MandatoryOverrideConstraint(Constraint):
-    def __init__(self) -> None:
-        self.name = "MandatoryOverride"
-
-    def is_satisfied(self, task: Task, context: SchedulerContext) -> bool: ...
-
-    def describe(self) -> str: ...
-
-
-# ---------------------------------------------------------------------------
-# Scheduler (core engine)
-# ---------------------------------------------------------------------------
 
 
 @dataclass
 class Scheduler:
-    constraints: list[Constraint] = field(default_factory=list)
+    """Manages all tasks across pets. Supports filtering and status updates."""
 
-    def generate_plan(self, owner: Owner, schedule_date: date) -> Schedule: ...
+    tasks: list[Task] = field(default_factory=list)
 
-    def _build_heap(self, tasks: list[Task]) -> list: ...
+    def add_task(self, task: Task) -> None:
+        """Add a task to the scheduler."""
+        ...
 
-    def _check_constraints(
-        self, task: Task, context: SchedulerContext
-    ) -> tuple[bool, str]: ...
+    def remove_task(self, name: str) -> None:
+        """Remove a task by name from the scheduler."""
+        ...
 
-    def _assign_start_time(self, elapsed_minutes: int) -> time: ...
+    def get_tasks_for_pet(self, pet_name: str) -> list[Task]:
+        """Return all tasks assigned to a specific pet (or tagged 'All')."""
+        ...
 
-    def _format_reasoning(
-        self, task: Task, passed: bool, context: SchedulerContext
-    ) -> str: ...
+    def get_tasks_for_date(self, target_date: date) -> list[Task]:
+        """Return all tasks scheduled for a given date."""
+        ...
+
+    def mark_complete(self, task_name: str) -> None:
+        """Mark a task as completed by name."""
+        ...
