@@ -227,7 +227,7 @@ if st.session_state.owner:
         st.selectbox("Filter by status", ["All", "Incomplete", "Completed"], key="filter_status")
     with col3:
         st.multiselect("Sort by (order matters)", ["Priority", "Date & Time"],
-                       default=["Priority"], key="sort_by")
+                       key="sort_by")
 
     scheduler = st.session_state.scheduler
     active_pet = st.session_state.get("filter_pet", "All")
