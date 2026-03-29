@@ -45,7 +45,7 @@ section("All tasks")
 print_tasks("", scheduler.tasks)
 
 section("Tasks by priority")
-print_tasks("", scheduler.get_tasks_by_priority())
+print_tasks("", scheduler.get_tasks_sorted(["Priority"]))
 
 section("Tasks for Biscuit")
 print_tasks("", scheduler.get_tasks_for_pet("Biscuit"))
@@ -54,11 +54,11 @@ section("Tasks for Mochi")
 print_tasks("", scheduler.get_tasks_for_pet("Mochi"))
 
 section("Tasks for today")
-print_tasks("", scheduler.get_tasks_for_date(today))
+print_tasks("", [t for t in scheduler.tasks if t.date == today])
 
 section("Mark 'Morning Walk' complete")
 scheduler.mark_complete("Morning Walk")
-print_tasks("Today's tasks after marking complete:", scheduler.get_tasks_for_date(today))
+print_tasks("Today's tasks after marking complete:", [t for t in scheduler.tasks if t.date == today])
 
 section("Remove Mochi and her tasks")
 owner.remove_pet("Mochi", scheduler)
@@ -108,4 +108,4 @@ section("Edge case: task assigned to no pets")
 print_tasks("Tasks with no pets assigned:", scheduler.get_unassigned_tasks())
 
 section("Edge case: get tasks for date with no tasks")
-print_tasks("Tasks for 2000-01-01:", scheduler.get_tasks_for_date(date(2000, 1, 1)))
+print_tasks("Tasks for 2000-01-01:", [t for t in scheduler.tasks if t.date == date(2000, 1, 1)])

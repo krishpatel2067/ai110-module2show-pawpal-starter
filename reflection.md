@@ -5,8 +5,6 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
-
-
 - What classes did you include, and what responsibilities did you assign to each?
 
 The initial UML design consists of four classes:
@@ -22,7 +20,7 @@ There is also an enum called `Priority` to manage task priority and allow sortin
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
-Yes, the design of the app specified by the UML changed. In particular, I made it so that the owner can have multiple schedules and allow them to create/remove scheduled tasks and standalone tasks. This allows them to collect tasks into multiple groups while allowing the option of groupless tasks.
+Yes, the design of the app specified by the UML changed. In particular, I had Claude Code add another enum for `Frequency`, which helped with the smart feature of automatically adding the next ocurrence of a recurring task that is marked as complete. This ensured that frequency appeared as a dropdown with only a select few values and that the internal logic can handle all the choices.
 
 ---
 
@@ -40,7 +38,7 @@ I implemented priority as a constraint since it was the simplest for this projec
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
-The Scheduler airs on the side of code readibility and not necessarily efficiency. For example, it uses list comprehension to creae a completely new list each time items need to be removed from it. Under a DSA context, this is inefficient due to extra memory allocation. However, I decided this tradeoff was reasonable in this app's scenario since owners would only have a countable number of pets and tasks, so efficiency differences should be minimal with normal use, especially if the code is more robust (e.g. removing all duplicates via list comprehension) and short.
+The scheduler airs on the side of code readibility and not necessarily efficiency. For example, it uses list comprehension to create a completely new list each time items need to be removed from it. Under a DSA context, this is inefficient due to extra memory allocation. However, I decided this tradeoff was reasonable in this app's scenario since owners would only have a countable number of pets and tasks, so efficiency differences should be minimal with normal use, especially if the code is more robust (e.g. removing all duplicates via list comprehension) and short.
 
 ---
 
@@ -97,3 +95,5 @@ I would improve the interface a bit such as the user-facing errors and warnings 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+The most important thing I learned designing an app from ground up using AI based on given specifications is to *always* check the AI's work, preferably in the code itself and the end product (e.g., UI) afterwards but not just the latter. It helps prevents bugs later down the line (many of which compound if not dealt with early on!) and helps you remain sharp in your coding knowledge. Just like how it's important to learn conversion from binary to decimal (and vice versa) even though computers do it for us, so is learning to code and staying sharp in that skill.

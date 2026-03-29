@@ -270,10 +270,10 @@ if st.session_state.owner:
                     elif task.duration_minutes > 0:
                         time_label = f" · {task.duration_minutes} min"
                     priority_circle = {Priority.HIGH: "🔴", Priority.MEDIUM: "🟡", Priority.LOW: "🟢"}[task.priority]
-                    conflict_flag = " ⚠️" if task.name in conflicted else ""
-                    st.markdown(f"**{status} {task.name}**{conflict_flag} &nbsp; {date_label}{time_label}")
+                    st.markdown(f"**{status} {task.name}** &nbsp; {date_label}{time_label}")
                     pets_label = ", ".join(task.pet_names) if task.pet_names else "No pets"
-                    st.caption(f"{priority_circle} {task.priority.name} · {task.frequency.value} · {pets_label}")
+                    conflict_flag = " · ⚠️ Time Conflict" if task.name in conflicted else ""
+                    st.caption(f"{priority_circle} {task.priority.name} · {task.frequency.value} · {pets_label}{conflict_flag}")
                     if task.description:
                         st.caption(f"_{task.description}_")
                 with col_complete:

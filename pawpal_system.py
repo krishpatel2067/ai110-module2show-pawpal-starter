@@ -105,19 +105,10 @@ class Scheduler:
         for t in self.tasks:
             t.pet_names = [n for n in t.pet_names if n != pet_name]
 
-    def task_count_for_pet(self, pet_name: str) -> int:
-        """Return the number of tasks assigned to a specific pet."""
-        return len(self.get_tasks_for_pet(pet_name))
-
     def get_tasks_for_pet(self, pet_name: str, tasks: list[Task] | None = None) -> list[Task]:
         """Return tasks assigned to a specific pet."""
         src = tasks if tasks is not None else self.tasks
         return [t for t in src if pet_name in t.pet_names]
-
-    def get_tasks_for_date(self, target_date: date, tasks: list[Task] | None = None) -> list[Task]:
-        """Return tasks scheduled for a given date."""
-        src = tasks if tasks is not None else self.tasks
-        return [t for t in src if t.date == target_date]
 
     def get_unassigned_tasks(self, tasks: list[Task] | None = None) -> list[Task]:
         """Return tasks with no pets assigned."""
@@ -133,16 +124,6 @@ class Scheduler:
         """Return incomplete tasks."""
         src = tasks if tasks is not None else self.tasks
         return [t for t in src if not t.completed]
-
-    def get_tasks_by_priority(self, tasks: list[Task] | None = None) -> list[Task]:
-        """Return tasks sorted HIGH to LOW priority."""
-        src = tasks if tasks is not None else self.tasks
-        return sorted(src, key=lambda t: t.priority.value)
-
-    def get_tasks_by_datetime(self, tasks: list[Task] | None = None) -> list[Task]:
-        """Return tasks sorted by date then start time (untimed tasks sort last within a day)."""
-        src = tasks if tasks is not None else self.tasks
-        return sorted(src, key=lambda t: (t.date, t.time_start or time.max))
 
     def get_tasks_sorted(self, sort_keys: list[str], tasks: list[Task] | None = None) -> list[Task]:
         """Return tasks sorted by an ordered list of keys: 'Priority' and/or 'Date & Time'.
@@ -197,8 +178,8 @@ class Scheduler:
 
     def get_conflicts(self, task: Task) -> list[Task]:
         """Return existing tasks whose time window overlaps with the given task.
-        Only tasks sharing at least one pet (or both unassigned) on the same date are checked.
-        Tasks without a time_start or duration are skipped."""
+        Only tasks sharing at least one pet on the same date are checked.
+        Tasks without a time_start, duration, or pet are skipped."""
         if task.time_start is None or task.duration_minutes <= 0:
             return []
 
@@ -216,10 +197,11 @@ class Scheduler:
                 continue
             if existing.time_start is None or existing.duration_minutes <= 0:
                 continue
-            # Only flag conflicts between tasks that share a pet (or are both unassigned)
-            if task.pet_names and existing.pet_names:
-                if not set(task.pet_names) & set(existing.pet_names):
-                    continue
+            # Only flag conflicts between tasks that share at least one pet
+            if not task.pet_names or not existing.pet_names:
+                continue
+            if not set(task.pet_names) & set(existing.pet_names):
+                continue
             existing_start = to_minutes(existing.time_start)
             existing_end = existing_start + existing.duration_minutes
             if task_start < existing_end and existing_start < task_end:

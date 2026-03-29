@@ -35,11 +35,11 @@ def test_mark_complete_changes_task_status(scheduler):
 
 
 def test_add_task_increases_pet_task_count(scheduler):
-    assert scheduler.task_count_for_pet("Mochi") == 0
+    assert len(scheduler.get_tasks_for_pet("Mochi")) == 0
     scheduler.add_task(make_task("Morning Feed", pet_names=["Mochi"]))
-    assert scheduler.task_count_for_pet("Mochi") == 1
+    assert len(scheduler.get_tasks_for_pet("Mochi")) == 1
     scheduler.add_task(make_task("Evening Feed", pet_names=["Mochi"]))
-    assert scheduler.task_count_for_pet("Mochi") == 2
+    assert len(scheduler.get_tasks_for_pet("Mochi")) == 2
 
 
 # ── Sorting ──────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ def test_sort_by_priority(scheduler):
     scheduler.add_task(make_task("Low Task", priority=Priority.LOW))
     scheduler.add_task(make_task("High Task", priority=Priority.HIGH))
     scheduler.add_task(make_task("Medium Task", priority=Priority.MEDIUM))
-    tasks = scheduler.get_tasks_by_priority()
+    tasks = scheduler.get_tasks_sorted(["Priority"])
     assert [t.priority for t in tasks] == [Priority.HIGH, Priority.MEDIUM, Priority.LOW]
 
 
@@ -57,7 +57,7 @@ def test_sort_by_datetime_orders_by_date_then_time(scheduler):
     earlier_date = date(2026, 4, 1)
     scheduler.add_task(make_task("Late Task", d=later_date, time_start=time(9, 0), duration_minutes=30))
     scheduler.add_task(make_task("Early Task", d=earlier_date, time_start=time(10, 0), duration_minutes=30))
-    tasks = scheduler.get_tasks_by_datetime()
+    tasks = scheduler.get_tasks_sorted(["Date & Time"])
     assert tasks[0].name == "Early Task"
     assert tasks[1].name == "Late Task"
 
@@ -66,7 +66,7 @@ def test_sort_by_datetime_same_date_orders_by_time(scheduler):
     d = date(2026, 4, 1)
     scheduler.add_task(make_task("Afternoon", d=d, time_start=time(14, 0), duration_minutes=30))
     scheduler.add_task(make_task("Morning", d=d, time_start=time(8, 0), duration_minutes=30))
-    tasks = scheduler.get_tasks_by_datetime()
+    tasks = scheduler.get_tasks_sorted(["Date & Time"])
     assert tasks[0].name == "Morning"
     assert tasks[1].name == "Afternoon"
 
@@ -75,7 +75,7 @@ def test_sort_by_datetime_untimed_tasks_sort_last(scheduler):
     d = date(2026, 4, 1)
     scheduler.add_task(make_task("No Time", d=d))
     scheduler.add_task(make_task("Has Time", d=d, time_start=time(8, 0), duration_minutes=30))
-    tasks = scheduler.get_tasks_by_datetime()
+    tasks = scheduler.get_tasks_sorted(["Date & Time"])
     assert tasks[0].name == "Has Time"
     assert tasks[1].name == "No Time"
 
