@@ -1,6 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from datetime import date
+from dataclasses import dataclass, field, replace
+from dateutil.relativedelta import relativedelta
+from datetime import date, time, timedelta
 from enum import Enum
 
 
@@ -10,6 +11,14 @@ class Priority(Enum):
     LOW = 3
 
 
+class Frequency(Enum):
+    ONCE = "Once"
+    DAILY = "Daily"
+    WEEKLY = "Weekly"
+    MONTHLY = "Monthly"
+    YEARLY = "Yearly"
+
+
 @dataclass
 class Task:
     """A single pet care task (walk, feeding, medication, etc.)."""
@@ -17,10 +26,12 @@ class Task:
     name: str
     description: str
     completed: bool
-    frequency: str       # e.g. "daily", "weekly", "as needed"
+    frequency: Frequency
     date: date
     priority: Priority
     pet_names: list[str] = field(default_factory=list)  # empty = no pets assigned
+    time_start: time | None = None
+    duration_minutes: int = 0
 
     def __post_init__(self) -> None:
         """Remove duplicate pet names while preserving their original order."""
@@ -71,7 +82,7 @@ class Scheduler:
         if unknown:
             raise ValueError(f"Unknown pet(s): {', '.join(unknown)}. Add them to the owner first.")
         for existing in self.tasks:
-            if existing.name == task.name:
+            if existing.name == task.name and existing.date == task.date:
                 existing.pet_names = list(dict.fromkeys(existing.pet_names + task.pet_names))
                 return
         self.tasks.append(task)
@@ -91,26 +102,93 @@ class Scheduler:
         """Return the number of tasks assigned to a specific pet."""
         return len(self.get_tasks_for_pet(pet_name))
 
-    def get_tasks_for_pet(self, pet_name: str) -> list[Task]:
-        """Return all tasks assigned to a specific pet."""
-        return [t for t in self.tasks if pet_name in t.pet_names]
+    def get_tasks_for_pet(self, pet_name: str, tasks: list[Task] | None = None) -> list[Task]:
+        """Return tasks assigned to a specific pet."""
+        src = tasks if tasks is not None else self.tasks
+        return [t for t in src if pet_name in t.pet_names]
 
-    def get_tasks_for_date(self, target_date: date) -> list[Task]:
-        """Return all tasks scheduled for a given date."""
-        return [t for t in self.tasks if t.date == target_date]
+    def get_tasks_for_date(self, target_date: date, tasks: list[Task] | None = None) -> list[Task]:
+        """Return tasks scheduled for a given date."""
+        src = tasks if tasks is not None else self.tasks
+        return [t for t in src if t.date == target_date]
 
-    def get_unassigned_tasks(self) -> list[Task]:
-        """Return all tasks with no pets assigned."""
-        return [t for t in self.tasks if not t.pet_names]
+    def get_unassigned_tasks(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return tasks with no pets assigned."""
+        src = tasks if tasks is not None else self.tasks
+        return [t for t in src if not t.pet_names]
 
-    def get_tasks_by_priority(self) -> list[Task]:
-        """Return all tasks sorted from HIGH to LOW priority."""
-        return sorted(self.tasks, key=lambda t: t.priority.value)
+    def get_completed_tasks(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return completed tasks."""
+        src = tasks if tasks is not None else self.tasks
+        return [t for t in src if t.completed]
+
+    def get_incomplete_tasks(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return incomplete tasks."""
+        src = tasks if tasks is not None else self.tasks
+        return [t for t in src if not t.completed]
+
+    def get_tasks_by_priority(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return tasks sorted HIGH to LOW priority."""
+        src = tasks if tasks is not None else self.tasks
+        return sorted(src, key=lambda t: t.priority.value)
+
+    def get_tasks_by_datetime(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return tasks sorted by date then start time (untimed tasks sort last within a day)."""
+        src = tasks if tasks is not None else self.tasks
+        return sorted(src, key=lambda t: (t.date, t.time_start or time.max))
+
+    def get_conflicts(self, task: Task) -> list[Task]:
+        """Return existing tasks whose time window overlaps with the given task.
+        Only tasks sharing at least one pet (or both unassigned) on the same date are checked.
+        Tasks without a time_start or duration are skipped."""
+        if task.time_start is None or task.duration_minutes <= 0:
+            return []
+
+        def to_minutes(t: time) -> int:
+            return t.hour * 60 + t.minute
+
+        task_start = to_minutes(task.time_start)
+        task_end = task_start + task.duration_minutes
+        conflicts = []
+
+        for existing in self.tasks:
+            if existing.name == task.name:
+                continue
+            if existing.date != task.date:
+                continue
+            if existing.time_start is None or existing.duration_minutes <= 0:
+                continue
+            # Only flag conflicts between tasks that share a pet (or are both unassigned)
+            if task.pet_names and existing.pet_names:
+                if not set(task.pet_names) & set(existing.pet_names):
+                    continue
+            existing_start = to_minutes(existing.time_start)
+            existing_end = existing_start + existing.duration_minutes
+            if task_start < existing_end and existing_start < task_end:
+                conflicts.append(existing)
+
+        return conflicts
+
+    def _next_date(self, d: date, freq: Frequency) -> date | None:
+        """Return the next occurrence date for a given frequency, or None for ONCE."""
+        if freq == Frequency.ONCE:
+            return None
+        if freq == Frequency.DAILY:
+            return d + timedelta(days=1)
+        if freq == Frequency.WEEKLY:
+            return d + timedelta(weeks=1)
+        if freq == Frequency.MONTHLY:
+            return d + relativedelta(months=1)
+        # YEARLY
+        return d + relativedelta(years=1)
 
     def mark_complete(self, task_name: str) -> None:
-        """Mark a task as completed by name."""
+        """Mark a task as completed and schedule the next occurrence if recurring."""
         for t in self.tasks:
-            if t.name == task_name:
+            if t.name == task_name and not t.completed:
                 t.completed = True
+                next_d = self._next_date(t.date, t.frequency)
+                if next_d is not None:
+                    self.tasks.append(replace(t, date=next_d, completed=False))
                 return
         raise ValueError(f"Task '{task_name}' not found.")
